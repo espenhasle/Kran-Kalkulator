@@ -348,7 +348,7 @@ with left:
             "Kommentar (valgfritt)": st.column_config.TextColumn(help="Fri tekst (tas med i eksport)"),
         },
     )
-    st.caption("Hvis slutt < start, tolkes Ã¸kten som over midnatt.")
+    st.caption("Hvis slutt < start, tolkes \\u00f8kten som over midnatt.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # ===========================
