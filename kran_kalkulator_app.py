@@ -257,7 +257,7 @@ def compute_row(date_val: Any, start_t: Any, end_t: Any, meal_td: Any, wait_td: 
 
     return {
         "Totalt timer": hours(total_td),
-        "OrdinÃ¦r (07:30-15:00)": hours(buckets.get("ord", dt.timedelta(0))),
+        "Ordin\u00e6r (07:30-15:00)": hours(buckets.get("ord", dt.timedelta(0))),
         "Overtid 50% (15:00-21:00)": hours(buckets.get("ot50", dt.timedelta(0))),
         "Overtid 100% (21:00-07:30)": hours(buckets.get("ot100", dt.timedelta(0))),
         "Overtid 100% Helg": hours(buckets.get("weekend", dt.timedelta(0))),
@@ -278,9 +278,9 @@ with st.sidebar:
 
     c1, c2, c3 = st.columns(3)
     with c1:
-        day_start = st.time_input("OrdinÃ¦r start", DEFAULT_RULES.day_start, step=dt.timedelta(minutes=15))
+        day_start = st.time_input("Ordin\u00e6r start", DEFAULT_RULES.day_start, step=dt.timedelta(minutes=15))
     with c2:
-        day_end = st.time_input("OrdinÃ¦r slutt", DEFAULT_RULES.day_end, step=dt.timedelta(minutes=15))
+        day_end = st.time_input("Ordin\u00e6r slutt", DEFAULT_RULES.day_end, step=dt.timedelta(minutes=15))
     with c3:
         ot50_end = st.time_input("OT 50% slutt", DEFAULT_RULES.ot50_end, step=dt.timedelta(minutes=15))
 
@@ -404,7 +404,7 @@ st.subheader("\u2705 Oppsummering")
 
 numeric_cols = [
     "Totalt timer",
-    "OrdinÃ¦r (07:30-15:00)",
+    "Ordin\u00e6r (07:30-15:00)",
     "Overtid 50% (15:00-21:00)",
     "Overtid 100% (21:00-07:30)",
     "Overtid 100% Helg",
@@ -419,7 +419,7 @@ totals = out_df[existing_numeric_cols].sum(numeric_only=True) if existing_numeri
 k1, k2, k3, k4 = st.columns(4)
 k1.metric("Fakturerbar krantid (t)", f"{totals.get('Fakturerbar Krantid (t)', 0):.2f}")
 k2.metric("Totalt (t)", f"{totals.get('Totalt timer', 0):.2f}")
-k3.metric("OrdinÃ¦r (t)", f"{totals.get('OrdinÃ¦r (07:30-15:00)', 0):.2f}")
+k3.metric("OrdinÃ¦r (t)", f"{totals.get('Ordin\u00e6r (07:30-15:00)', 0):.2f}")
 k4.metric("Overtid totalt (t)", f"{(totals.get('Overtid 50% (15:00-21:00)', 0)+totals.get('Overtid 100% (21:00-07:30)', 0)+totals.get('Overtid 100% Helg', 0)+totals.get('Overtid 133% Helligdag', 0)):.2f}")
 
 with st.expander("Se summeringstabell", expanded=False):
