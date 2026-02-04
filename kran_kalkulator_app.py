@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
 import datetime as dt
@@ -42,20 +43,24 @@ CSS = """
 st.markdown(CSS, unsafe_allow_html=True)
 
 # ===========================
-# Logo (kun kran)
+# Logo (stÃ¸tter bÃ¥de Assets/ og assets/)
 # ===========================
-CRANE_CANDIDATES = [
-    _Path("assets/kran.png"),
-    _Path("Assets/kran.png"),
+LOGO_CANDIDATES = [
+    _Path("assets/kristiansand_havn.png"),
+    _Path("assets/kristiansand_havn.jpg"),
+    _Path("Assets/kristiansand_havn.png"),
+    _Path("Assets/kristiansand_havn.jpg"),
+    _Path("assets/kristiansand_havn.png.png"),
+    _Path("Assets/kristiansand_havn.png.png"),
 ]
 
-def _find_crane() -> Optional[str]:
-    for p in CRANE_CANDIDATES:
+def _find_logo() -> Optional[str]:
+    for p in LOGO_CANDIDATES:
         if p.exists():
             return str(p)
     return None
 
-CRANE_PATH = _find_crane()
+LOGO_PATH = _find_logo()
 
 # ===========================
 # Helligdager (automatisk)
@@ -261,7 +266,7 @@ def compute_row(date_val: Any, start_t: Any, end_t: Any, meal_td: Any, wait_td: 
 # Sidebar (innstillinger)
 # ===========================
 with st.sidebar:
-    st.markdown("## âš™ï¸ Innstillinger")
+    st.markdown("## \u2699\ufe0f Innstillinger")
     st.caption("Juster tidsvinduer ved behov.")
 
     c1, c2, c3 = st.columns(3)
@@ -274,13 +279,13 @@ with st.sidebar:
 
     rules = Rules(day_start=day_start, day_end=day_end, ot50_end=ot50_end, night_end=DEFAULT_RULES.night_end)
 
-    with st.expander("ðŸ“Œ Tips", expanded=False):
+    with st.expander("\U0001F4CC Tips", expanded=False):
         st.markdown(
             "- Du kan skrive klokkeslett som **0730**, **730**, **07:30**, **7.30**.\n"
             "- Hvis slutt er tidligere enn start, tolkes det som **over midnatt**.\n"
             "- Helg: all tid blir *Overtid 100% Helg*.\n"
             "- Helligdag: all tid blir *Overtid 133% Helligdag*.\n"
-            "- Fakturerbar = totalt âˆ’ spisetid âˆ’ ventetid."
+            "- Fakturerbar = totalt \u2212 spisetid \u2212 ventetid."
         )
 
 # ===========================
@@ -288,14 +293,14 @@ with st.sidebar:
 # ===========================
 top_left, top_right = st.columns([0.22, 0.78], vertical_alignment="center")
 with top_left:
-    if CRANE_PATH:
-        st.image(CRANE_PATH, use_container_width=True)
+    if LOGO_PATH:
+        st.image(LOGO_PATH, use_container_width=True)
 with top_right:
     st.markdown(
         """
 <div class="kh-hero">
-  <h1>âš“ KranKalkulator</h1>
-  <p>Registrer Ã¸kter og fÃ¥ automatisk fordeling pÃ¥ ordinÃ¦r/overtid + fakturerbar krantid.</p>
+  <h1>\u2693\ufe0f KranKalkulator</h1>
+  <p>Registrer \u00f8kter og f\u00e5 automatisk fordeling p\u00e5 ordin\u00e6r/overtid + fakturerbar krantid.</p>
 </div>
 """,
         unsafe_allow_html=True,
@@ -321,14 +326,14 @@ left, right = st.columns([1.05, 1.0], gap="large")
 
 with left:
     st.markdown('<div class="kh-card">', unsafe_allow_html=True)
-    st.subheader("ðŸ“ Registreringer")
+    st.subheader("\U0001F4DD Registreringer")
 
     edited = st.data_editor(
         default,
         num_rows="dynamic",
         use_container_width=True,
         column_config={
-            "Dato": st.column_config.DateColumn(format="YYYY-MM-DD", help="Dato for Ã¸kten"),
+            "Dato": st.column_config.DateColumn(format="YYYY-MM-DD", help="Dato for \u00f8kten"),
             "Start": st.column_config.TextColumn(help="F.eks 0730 / 07:30 / 7.30"),
             "Slutt": st.column_config.TextColumn(help="F.eks 1530 / 15:30 (kan vÃ¦re neste dag)"),
             "Spisetid (HH:MM)": st.column_config.TextColumn(help="F.eks 0100 / 01:00 / 60 (min)"),
@@ -336,7 +341,7 @@ with left:
             "Kommentar (valgfritt)": st.column_config.TextColumn(help="Fri tekst (tas med i eksport)"),
         },
     )
-    st.caption("Hvis slutt < start, tolkes Ã¸kten som over midnatt.")
+    st.caption("Hvis slutt < start, tolkes \u00f8kten som over midnatt.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # ===========================
@@ -376,7 +381,7 @@ out_df = pd.DataFrame(rows)
 
 with right:
     st.markdown('<div class="kh-card">', unsafe_allow_html=True)
-    st.subheader("ðŸ“Š Resultat (forhÃ¥ndsvisning)")
+    st.subheader("\U0001F4CA Resultat (forh\u00e5ndsvisning)")
     if errors:
         st.markdown(f'<div class="err">âš ï¸ {errors} rad(er) mangler dato/start/slutt.</div>', unsafe_allow_html=True)
     st.dataframe(out_df, use_container_width=True, height=360)
@@ -388,7 +393,7 @@ st.write("")
 # Oppsummering + eksport
 # ===========================
 st.markdown('<div class="kh-card">', unsafe_allow_html=True)
-st.subheader("âœ… Oppsummering")
+st.subheader("\u2705 Oppsummering")
 
 numeric_cols = [
     "Totalt timer",
@@ -416,11 +421,10 @@ with st.expander("Se summeringstabell", expanded=False):
 st.markdown('<p class="small-muted">Eksporten inkluderer ogsÃ¥ eventuelle kommentarer per rad.</p>', unsafe_allow_html=True)
 
 st.download_button(
-    "â¬‡ï¸ Last ned som CSV",
+    "\u2b07\ufe0f Last ned som CSV",
     data=out_df.to_csv(index=False).encode("utf-8"),
     file_name="kran_kalkulator.csv",
     mime="text/csv",
 )
 
 st.markdown("</div>", unsafe_allow_html=True)
-
