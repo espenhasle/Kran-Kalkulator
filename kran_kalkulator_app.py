@@ -43,24 +43,29 @@ CSS = """
 st.markdown(CSS, unsafe_allow_html=True)
 
 # ===========================
-# Logo (stÃ¸tter bÃ¥de Assets/ og assets/)
+# Logoer (kran i header, havnelogo i sidebar)
 # ===========================
-LOGO_CANDIDATES = [
+CRANE_CANDIDATES = [
+    _Path("assets/kran.png"),
+    _Path("Assets/kran.png"),
+]
+HARBOR_CANDIDATES = [
     _Path("assets/kristiansand_havn.png"),
-    _Path("assets/kristiansand_havn.jpg"),
     _Path("Assets/kristiansand_havn.png"),
+    _Path("assets/kristiansand_havn.jpg"),
     _Path("Assets/kristiansand_havn.jpg"),
     _Path("assets/kristiansand_havn.png.png"),
     _Path("Assets/kristiansand_havn.png.png"),
 ]
 
-def _find_logo() -> Optional[str]:
-    for p in LOGO_CANDIDATES:
+def _find_first(paths) -> Optional[str]:
+    for p in paths:
         if p.exists():
             return str(p)
     return None
 
-LOGO_PATH = _find_logo()
+CRANE_PATH = _find_first(CRANE_CANDIDATES)
+HARBOR_CRANE_PATH = _find_first(HARBOR_CANDIDATES)
 
 # ===========================
 # Helligdager (automatisk)
@@ -266,6 +271,8 @@ def compute_row(date_val: Any, start_t: Any, end_t: Any, meal_td: Any, wait_td: 
 # Sidebar (innstillinger)
 # ===========================
 with st.sidebar:
+    if HARBOR_CRANE_PATH:
+        st.image(HARBOR_CRANE_PATH, use_container_width=True)
     st.markdown("## \u2699\ufe0f Innstillinger")
     st.caption("Juster tidsvinduer ved behov.")
 
@@ -285,7 +292,7 @@ with st.sidebar:
             "- Hvis slutt er tidligere enn start, tolkes det som **over midnatt**.\n"
             "- Helg: all tid blir *Overtid 100% Helg*.\n"
             "- Helligdag: all tid blir *Overtid 133% Helligdag*.\n"
-            "- Fakturerbar = totalt \u2212 spisetid \u2212 ventetid."
+            "- Fakturerbar = totalt âˆ’ spisetid âˆ’ ventetid."
         )
 
 # ===========================
@@ -293,13 +300,13 @@ with st.sidebar:
 # ===========================
 top_left, top_right = st.columns([0.22, 0.78], vertical_alignment="center")
 with top_left:
-    if LOGO_PATH:
-        st.image(LOGO_PATH, use_container_width=True)
+    if CRANE_PATH:
+        st.image(CRANE_PATH, use_container_width=True)
 with top_right:
     st.markdown(
         """
 <div class="kh-hero">
-  <h1>\u2693\ufe0f KranKalkulator</h1>
+  <h1>\U0001F3D7\ufe0f KranKalkulator</h1>
   <p>Registrer \u00f8kter og f\u00e5 automatisk fordeling p\u00e5 ordin\u00e6r/overtid + fakturerbar krantid.</p>
 </div>
 """,
@@ -333,7 +340,7 @@ with left:
         num_rows="dynamic",
         use_container_width=True,
         column_config={
-            "Dato": st.column_config.DateColumn(format="YYYY-MM-DD", help="Dato for \u00f8kten"),
+            "Dato": st.column_config.DateColumn(format="YYYY-MM-DD", help="Dato for Ã¸kten"),
             "Start": st.column_config.TextColumn(help="F.eks 0730 / 07:30 / 7.30"),
             "Slutt": st.column_config.TextColumn(help="F.eks 1530 / 15:30 (kan vÃ¦re neste dag)"),
             "Spisetid (HH:MM)": st.column_config.TextColumn(help="F.eks 0100 / 01:00 / 60 (min)"),
@@ -341,7 +348,7 @@ with left:
             "Kommentar (valgfritt)": st.column_config.TextColumn(help="Fri tekst (tas med i eksport)"),
         },
     )
-    st.caption("Hvis slutt < start, tolkes \u00f8kten som over midnatt.")
+    st.caption("Hvis slutt < start, tolkes Ã¸kten som over midnatt.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # ===========================
