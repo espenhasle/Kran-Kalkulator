@@ -1,0 +1,7 @@
+[theme]
+# Duse "havnefarger"
+primaryColor = "#2E6F77"
+backgroundColor = "#F2F5F4"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#0B2E3A"
+font = "sans serif"
