@@ -9,7 +9,7 @@ from pathlib import Path as _Path
 # ===========================
 # Sideoppsett + stil
 # ===========================
-st.set_page_config(page_title="KranKalkulator", page_icon="⚓", layout="wide")
+st.set_page_config(page_title="KranKalkulator", page_icon="âš“", layout="wide")
 
 CSS = """
 <style>
@@ -42,24 +42,20 @@ CSS = """
 st.markdown(CSS, unsafe_allow_html=True)
 
 # ===========================
-# Logo (støtter både Assets/ og assets/)
+# Logo (kun kran)
 # ===========================
-LOGO_CANDIDATES = [
-    _Path("assets/kristiansand_havn.png"),
-    _Path("assets/kristiansand_havn.jpg"),
-    _Path("Assets/kristiansand_havn.png"),
-    _Path("Assets/kristiansand_havn.jpg"),
-    _Path("assets/kristiansand_havn.png.png"),
-    _Path("Assets/kristiansand_havn.png.png"),
+CRANE_CANDIDATES = [
+    _Path("assets/kran.png"),
+    _Path("Assets/kran.png"),
 ]
 
-def _find_logo() -> Optional[str]:
-    for p in LOGO_CANDIDATES:
+def _find_crane() -> Optional[str]:
+    for p in CRANE_CANDIDATES:
         if p.exists():
             return str(p)
     return None
 
-LOGO_PATH = _find_logo()
+CRANE_PATH = _find_crane()
 
 # ===========================
 # Helligdager (automatisk)
@@ -70,7 +66,7 @@ def is_holiday(d: dt.date) -> bool:
     return d in NO_HOLIDAYS
 
 def is_weekend(d: dt.date) -> bool:
-    return d.weekday() >= 5  # 5=lør, 6=søn
+    return d.weekday() >= 5  # 5=lÃ¸r, 6=sÃ¸n
 
 # ===========================
 # Regler
@@ -195,7 +191,7 @@ def hours(td: dt.timedelta) -> float:
     return round(td.total_seconds() / 3600.0, 2)
 
 def split_work_by_windows(start_dt: dt.datetime, end_dt: dt.datetime, rules: Rules, day: dt.date) -> Dict[str, dt.timedelta]:
-    """Fordeler tid på ordinær / OT50 / OT100 (ukedag), eller helg/helligdag."""
+    """Fordeler tid pÃ¥ ordinÃ¦r / OT50 / OT100 (ukedag), eller helg/helligdag."""
     if end_dt <= start_dt:
         return {}
 
@@ -221,7 +217,7 @@ def split_work_by_windows(start_dt: dt.datetime, end_dt: dt.datetime, rules: Rul
     ord_td = overlap(start_dt, end_dt, ord_start, ord_end)
     ot50_td = overlap(start_dt, end_dt, ord_end, ot50_end)
 
-    # OT100: 21:00 -> 07:30 + evt før 07:30 samme dag
+    # OT100: 21:00 -> 07:30 + evt fÃ¸r 07:30 samme dag
     ot100_td = overlap(start_dt, end_dt, night_start, night_end)
     ot100_td += overlap(start_dt, end_dt, combine(d0, dt.time(0, 0)), ord_start)
 
@@ -235,7 +231,7 @@ def compute_row(date_val: Any, start_t: Any, end_t: Any, meal_td: Any, wait_td: 
     wait = _to_timedelta(wait_td)
 
     if not d or not s or not e:
-        return {"_error": "Dato, start og slutt må fylles inn."}
+        return {"_error": "Dato, start og slutt mÃ¥ fylles inn."}
 
     start_dt = combine(d, s)
     end_dt = combine(d, e)
@@ -251,7 +247,7 @@ def compute_row(date_val: Any, start_t: Any, end_t: Any, meal_td: Any, wait_td: 
 
     return {
         "Totalt timer": hours(total_td),
-        "Ordinær (07:30-15:00)": hours(buckets.get("ord", dt.timedelta(0))),
+        "OrdinÃ¦r (07:30-15:00)": hours(buckets.get("ord", dt.timedelta(0))),
         "Overtid 50% (15:00-21:00)": hours(buckets.get("ot50", dt.timedelta(0))),
         "Overtid 100% (21:00-07:30)": hours(buckets.get("ot100", dt.timedelta(0))),
         "Overtid 100% Helg": hours(buckets.get("weekend", dt.timedelta(0))),
@@ -265,26 +261,26 @@ def compute_row(date_val: Any, start_t: Any, end_t: Any, meal_td: Any, wait_td: 
 # Sidebar (innstillinger)
 # ===========================
 with st.sidebar:
-    st.markdown("## ⚙️ Innstillinger")
+    st.markdown("## âš™ï¸ Innstillinger")
     st.caption("Juster tidsvinduer ved behov.")
 
     c1, c2, c3 = st.columns(3)
     with c1:
-        day_start = st.time_input("Ordinær start", DEFAULT_RULES.day_start, step=dt.timedelta(minutes=15))
+        day_start = st.time_input("OrdinÃ¦r start", DEFAULT_RULES.day_start, step=dt.timedelta(minutes=15))
     with c2:
-        day_end = st.time_input("Ordinær slutt", DEFAULT_RULES.day_end, step=dt.timedelta(minutes=15))
+        day_end = st.time_input("OrdinÃ¦r slutt", DEFAULT_RULES.day_end, step=dt.timedelta(minutes=15))
     with c3:
         ot50_end = st.time_input("OT 50% slutt", DEFAULT_RULES.ot50_end, step=dt.timedelta(minutes=15))
 
     rules = Rules(day_start=day_start, day_end=day_end, ot50_end=ot50_end, night_end=DEFAULT_RULES.night_end)
 
-    with st.expander("📌 Tips", expanded=False):
+    with st.expander("ðŸ“Œ Tips", expanded=False):
         st.markdown(
             "- Du kan skrive klokkeslett som **0730**, **730**, **07:30**, **7.30**.\n"
             "- Hvis slutt er tidligere enn start, tolkes det som **over midnatt**.\n"
             "- Helg: all tid blir *Overtid 100% Helg*.\n"
             "- Helligdag: all tid blir *Overtid 133% Helligdag*.\n"
-            "- Fakturerbar = totalt − spisetid − ventetid."
+            "- Fakturerbar = totalt âˆ’ spisetid âˆ’ ventetid."
         )
 
 # ===========================
@@ -292,14 +288,14 @@ with st.sidebar:
 # ===========================
 top_left, top_right = st.columns([0.22, 0.78], vertical_alignment="center")
 with top_left:
-    if LOGO_PATH:
-        st.image(LOGO_PATH, use_container_width=True)
+    if CRANE_PATH:
+        st.image(CRANE_PATH, use_container_width=True)
 with top_right:
     st.markdown(
         """
 <div class="kh-hero">
-  <h1>⚓ KranKalkulator</h1>
-  <p>Registrer økter og få automatisk fordeling på ordinær/overtid + fakturerbar krantid.</p>
+  <h1>âš“ KranKalkulator</h1>
+  <p>Registrer Ã¸kter og fÃ¥ automatisk fordeling pÃ¥ ordinÃ¦r/overtid + fakturerbar krantid.</p>
 </div>
 """,
         unsafe_allow_html=True,
@@ -308,7 +304,7 @@ with top_right:
 st.write("")
 
 # ===========================
-# Inndata (bruk tekstfelt for Start/Slutt for å støtte 0730)
+# Inndata (bruk tekstfelt for Start/Slutt for Ã¥ stÃ¸tte 0730)
 # ===========================
 default = pd.DataFrame(
     [{
@@ -325,26 +321,26 @@ left, right = st.columns([1.05, 1.0], gap="large")
 
 with left:
     st.markdown('<div class="kh-card">', unsafe_allow_html=True)
-    st.subheader("📝 Registreringer")
+    st.subheader("ðŸ“ Registreringer")
 
     edited = st.data_editor(
         default,
         num_rows="dynamic",
         use_container_width=True,
         column_config={
-            "Dato": st.column_config.DateColumn(format="YYYY-MM-DD", help="Dato for økten"),
+            "Dato": st.column_config.DateColumn(format="YYYY-MM-DD", help="Dato for Ã¸kten"),
             "Start": st.column_config.TextColumn(help="F.eks 0730 / 07:30 / 7.30"),
-            "Slutt": st.column_config.TextColumn(help="F.eks 1530 / 15:30 (kan være neste dag)"),
+            "Slutt": st.column_config.TextColumn(help="F.eks 1530 / 15:30 (kan vÃ¦re neste dag)"),
             "Spisetid (HH:MM)": st.column_config.TextColumn(help="F.eks 0100 / 01:00 / 60 (min)"),
             "Ventetid (HH:MM)": st.column_config.TextColumn(help="F.eks 0030 / 00:30 / 15 (min)"),
             "Kommentar (valgfritt)": st.column_config.TextColumn(help="Fri tekst (tas med i eksport)"),
         },
     )
-    st.caption("Hvis slutt < start, tolkes økten som over midnatt.")
+    st.caption("Hvis slutt < start, tolkes Ã¸kten som over midnatt.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # ===========================
-# Beregn out_df (VIKTIG: før oppsummering)
+# Beregn out_df (VIKTIG: fÃ¸r oppsummering)
 # ===========================
 rows = []
 errors = 0
@@ -380,9 +376,9 @@ out_df = pd.DataFrame(rows)
 
 with right:
     st.markdown('<div class="kh-card">', unsafe_allow_html=True)
-    st.subheader("📊 Resultat (forhåndsvisning)")
+    st.subheader("ðŸ“Š Resultat (forhÃ¥ndsvisning)")
     if errors:
-        st.markdown(f'<div class="err">⚠️ {errors} rad(er) mangler dato/start/slutt.</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="err">âš ï¸ {errors} rad(er) mangler dato/start/slutt.</div>', unsafe_allow_html=True)
     st.dataframe(out_df, use_container_width=True, height=360)
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -392,11 +388,11 @@ st.write("")
 # Oppsummering + eksport
 # ===========================
 st.markdown('<div class="kh-card">', unsafe_allow_html=True)
-st.subheader("✅ Oppsummering")
+st.subheader("âœ… Oppsummering")
 
 numeric_cols = [
     "Totalt timer",
-    "Ordinær (07:30-15:00)",
+    "OrdinÃ¦r (07:30-15:00)",
     "Overtid 50% (15:00-21:00)",
     "Overtid 100% (21:00-07:30)",
     "Overtid 100% Helg",
@@ -411,19 +407,20 @@ totals = out_df[existing_numeric_cols].sum(numeric_only=True) if existing_numeri
 k1, k2, k3, k4 = st.columns(4)
 k1.metric("Fakturerbar krantid (t)", f"{totals.get('Fakturerbar Krantid (t)', 0):.2f}")
 k2.metric("Totalt (t)", f"{totals.get('Totalt timer', 0):.2f}")
-k3.metric("Ordinær (t)", f"{totals.get('Ordinær (07:30-15:00)', 0):.2f}")
+k3.metric("OrdinÃ¦r (t)", f"{totals.get('OrdinÃ¦r (07:30-15:00)', 0):.2f}")
 k4.metric("Overtid totalt (t)", f"{(totals.get('Overtid 50% (15:00-21:00)', 0)+totals.get('Overtid 100% (21:00-07:30)', 0)+totals.get('Overtid 100% Helg', 0)+totals.get('Overtid 133% Helligdag', 0)):.2f}")
 
 with st.expander("Se summeringstabell", expanded=False):
     st.dataframe(pd.DataFrame([totals]).T.rename(columns={0: "Sum (t)"}), use_container_width=True)
 
-st.markdown('<p class="small-muted">Eksporten inkluderer også eventuelle kommentarer per rad.</p>', unsafe_allow_html=True)
+st.markdown('<p class="small-muted">Eksporten inkluderer ogsÃ¥ eventuelle kommentarer per rad.</p>', unsafe_allow_html=True)
 
 st.download_button(
-    "⬇️ Last ned som CSV",
+    "â¬‡ï¸ Last ned som CSV",
     data=out_df.to_csv(index=False).encode("utf-8"),
     file_name="kran_kalkulator.csv",
     mime="text/csv",
 )
 
 st.markdown("</div>", unsafe_allow_html=True)
+
