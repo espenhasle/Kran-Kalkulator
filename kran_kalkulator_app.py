@@ -30,7 +30,7 @@ LOGO_PATH = _find_logo()
 
 st.set_page_config(
     page_title="KranKalkulator",
-    page_icon="⚓",
+    page_icon="âš“",
     layout="wide",
 )
 
@@ -84,7 +84,7 @@ st.markdown(CSS, unsafe_allow_html=True)
 NO_HOLIDAYS = holidays.country_holidays("NO")
 
 def is_holiday(d: dt.date) -> bool:
-    # holidays støtter mange år, men bygger opp dynamisk ved behov
+    # holidays stÃ¸tter mange Ã¥r, men bygger opp dynamisk ved behov
     return d in NO_HOLIDAYS
 
 # ---------------------------
@@ -173,11 +173,11 @@ def _to_time(x) -> Optional[dt.time]:
 # Oppsummering + eksport
 # ---------------------------
 st.markdown('<div class="kh-card">', unsafe_allow_html=True)
-st.subheader("✅ Oppsummering")
+st.subheader("âœ… Oppsummering")
 
 numeric_cols = [
     "Totalt timer",
-    "Ordinær (07:30-15:00)",
+    "OrdinÃ¦r (07:30-15:00)",
     "Overtid 50% (15:00-21:00)",
     "Overtid 100% (21:00-07:30)",
     "Overtid 100% Helg",
@@ -187,21 +187,22 @@ numeric_cols = [
     "Fakturerbar Krantid (t)",
 ]
 
-totals = out_df[numeric_cols].sum(numeric_only=True)
+existing_numeric_cols = [c for c in numeric_cols if c in out_df.columns]
+totals = out_df[existing_numeric_cols].sum(numeric_only=True) if existing_numeric_cols else pd.Series(dtype=float)
 
 k1, k2, k3, k4 = st.columns(4)
 k1.metric("Fakturerbar krantid (t)", f"{totals.get('Fakturerbar Krantid (t)', 0):.2f}")
 k2.metric("Totalt (t)", f"{totals.get('Totalt timer', 0):.2f}")
-k3.metric("Ordinær (t)", f"{totals.get('Ordinær (07:30-15:00)', 0):.2f}")
+k3.metric("OrdinÃ¦r (t)", f"{totals.get('OrdinÃ¦r (07:30-15:00)', 0):.2f}")
 k4.metric("Overtid totalt (t)", f"{(totals.get('Overtid 50% (15:00-21:00)', 0)+totals.get('Overtid 100% (21:00-07:30)', 0)+totals.get('Overtid 100% Helg', 0)+totals.get('Overtid 133% Helligdag', 0)):.2f}")
 
 with st.expander("Se summeringstabell", expanded=False):
     st.dataframe(pd.DataFrame([totals]).T.rename(columns={0: "Sum (t)"}), use_container_width=True)
 
-st.markdown('<p class="small-muted">Eksporten inkluderer også eventuelle kommentarer per rad.</p>', unsafe_allow_html=True)
+st.markdown('<p class="small-muted">Eksporten inkluderer ogsÃ¥ eventuelle kommentarer per rad.</p>', unsafe_allow_html=True)
 
 st.download_button(
-    "⬇️ Last ned som CSV",
+    "â¬‡ï¸ Last ned som CSV",
     data=out_df.to_csv(index=False).encode("utf-8"),
     file_name="kran_kalkulator.csv",
     mime="text/csv",
