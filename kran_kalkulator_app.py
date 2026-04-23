@@ -2,7 +2,6 @@
 import streamlit as st
 import pandas as pd
 import datetime as dt
-import holidays
 import io
 from dataclasses import dataclass
 from typing import Optional, Dict, Any, List, Tuple
@@ -54,19 +53,28 @@ CSS = """
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .4rem;
 }
-.kh-section-title .period{
-  font-size: .82rem;
+.kh-chips{
+  display: flex;
+  gap: .35rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.kh-chip{
+  font-size: .78rem;
   font-weight: 500;
-  color: var(--kh-teal);
-  background: var(--kh-mist);
   padding: .2rem .6rem;
   border-radius: 999px;
   text-transform: none;
   letter-spacing: 0;
+  border: 1px solid transparent;
 }
+.kh-chip.period{color: var(--kh-teal); background: var(--kh-mist); border-color: rgba(46,111,119,0.2);}
+.kh-chip.hellig{color: #7a3a00; background: #fff2d6; border-color: #e0b265;}
 
-/* Fakturagrunnlag-hero (hoveddbeløp) */
+/* Fakturagrunnlag-hero */
 .kh-invoice-hero{
   background: linear-gradient(135deg, #0B2E3A 0%, #2E6F77 100%);
   color: white;
@@ -200,25 +208,79 @@ CRANE_PATH = _find_first(CRANE_CANDIDATES)
 HARBOR_CRANE_PATH = _find_first(HARBOR_CANDIDATES)
 
 # ===========================
-# Helligdager (automatisk)
+# Norske helligdager (egen beregning – ingen avhengighet til 'holidays'-pakken)
 # ===========================
-NO_HOLIDAYS = holidays.country_holidays("NO")
+def _easter_sunday(year: int) -> dt.date:
+    """Første påskedag via Meeus/Jones/Butcher-algoritmen."""
+    a = year % 19
+    b = year // 100
+    c = year % 100
+    d = b // 4
+    e = b % 4
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d - g + 15) % 30
+    i = c // 4
+    k = c % 4
+    L = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * L) // 451
+    month = (h + L - 7 * m + 114) // 31
+    day = ((h + L - 7 * m + 114) % 31) + 1
+    return dt.date(year, month, day)
+
+def norwegian_holidays(year: int) -> Dict[dt.date, str]:
+    """Alle norske lov-/helligdager for et gitt år."""
+    easter = _easter_sunday(year)
+    return {
+        dt.date(year, 1, 1): "Første nyttårsdag",
+        easter - dt.timedelta(days=3): "Skjærtorsdag",
+        easter - dt.timedelta(days=2): "Langfredag",
+        easter: "Første påskedag",
+        easter + dt.timedelta(days=1): "Andre påskedag",
+        dt.date(year, 5, 1): "Arbeidernes dag",
+        dt.date(year, 5, 17): "Grunnlovsdag",
+        easter + dt.timedelta(days=39): "Kristi himmelfartsdag",
+        easter + dt.timedelta(days=49): "Første pinsedag",
+        easter + dt.timedelta(days=50): "Andre pinsedag",
+        dt.date(year, 12, 25): "Første juledag",
+        dt.date(year, 12, 26): "Andre juledag",
+    }
+
+_HOLIDAYS_CACHE: Dict[int, Dict[dt.date, str]] = {}
+
+def holiday_name(d: dt.date) -> Optional[str]:
+    if d.year not in _HOLIDAYS_CACHE:
+        _HOLIDAYS_CACHE[d.year] = norwegian_holidays(d.year)
+    return _HOLIDAYS_CACHE[d.year].get(d)
 
 def is_holiday(d: dt.date) -> bool:
-    return d in NO_HOLIDAYS
+    return holiday_name(d) is not None
 
 def is_weekend(d: dt.date) -> bool:
     return d.weekday() >= 5  # 5=lør, 6=søn
+
+def day_type_label(d: Optional[dt.date]) -> str:
+    if not isinstance(d, dt.date):
+        return ""
+    h = holiday_name(d)
+    if h:
+        return f"Helligdag: {h}"
+    wd = d.weekday()
+    if wd == 5:
+        return "Lørdag"
+    if wd == 6:
+        return "Søndag"
+    return ["Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag"][wd]
 
 # ===========================
 # Regler
 # ===========================
 @dataclass(frozen=True)
 class Rules:
-    day_start: dt.time   # 07:30
-    day_end: dt.time     # 15:00
-    ot50_end: dt.time    # 21:00
-    night_end: dt.time   # 07:30 (neste dag)
+    day_start: dt.time
+    day_end: dt.time
+    ot50_end: dt.time
+    night_end: dt.time
 
 DEFAULT_RULES = Rules(
     day_start=dt.time(7, 30),
@@ -241,7 +303,6 @@ def _to_date(x) -> Optional[dt.date]:
         return None
 
 def _to_time(x) -> Optional[dt.time]:
-    """Aksepterer HH:MM, HHMM, HMM, H.MM, H,MM, H."""
     if x is None or (isinstance(x, float) and pd.isna(x)):
         return None
     if isinstance(x, dt.time):
@@ -264,11 +325,11 @@ def _to_time(x) -> Optional[dt.time]:
 
     if s.isdigit():
         try:
-            if len(s) == 4:       # 0730
+            if len(s) == 4:
                 hh, mm = int(s[:2]), int(s[2:])
-            elif len(s) == 3:     # 730
+            elif len(s) == 3:
                 hh, mm = int(s[0]), int(s[1:])
-            elif len(s) <= 2:     # 7 / 07
+            elif len(s) <= 2:
                 hh, mm = int(s), 0
             else:
                 return None
@@ -280,7 +341,6 @@ def _to_time(x) -> Optional[dt.time]:
     return None
 
 def _to_timedelta(x) -> dt.timedelta:
-    """Aksepterer HH:MM, HHMM, HMM, MM (minutter)."""
     if x is None or (isinstance(x, float) and pd.isna(x)):
         return dt.timedelta(0)
     if isinstance(x, dt.timedelta):
@@ -326,7 +386,6 @@ def fmt_t(v: float) -> str:
     return f"{v:.2f} t".replace(".", ",")
 
 def split_work_by_windows(start_dt: dt.datetime, end_dt: dt.datetime, rules: Rules, day: dt.date) -> Dict[str, dt.timedelta]:
-    """Fordeler tid på ordinær / OT50 / OT100 (ukedag), eller helg/helligdag."""
     if end_dt <= start_dt:
         return {}
 
@@ -369,7 +428,7 @@ def compute_row(date_val: Any, start_t: Any, end_t: Any, meal_td: Any, wait_td: 
     start_dt = combine(d, s)
     end_dt = combine(d, e)
     if end_dt <= start_dt:
-        end_dt += dt.timedelta(days=1)  # over midnatt
+        end_dt += dt.timedelta(days=1)
 
     total_td = end_dt - start_dt
     billed_td = total_td - meal - wait
@@ -428,6 +487,9 @@ with st.sidebar:
             "- Helligdag → all tid blir **Overtid 133% Helligdag**.\n"
             "- Fakturerbar = totalt − spisetid − ventetid."
         )
+    with st.expander("📅 Norske helligdager i år", expanded=False):
+        for d, name in sorted(norwegian_holidays(dt.date.today().year).items()):
+            st.markdown(f"- **{d.strftime('%d.%m.%Y')}** ({['Man','Tir','Ons','Tor','Fre','Lør','Søn'][d.weekday()]}) – {name}")
 
 # ===========================
 # Header
@@ -502,6 +564,7 @@ for _, r in edited.iterrows():
 
     base = {
         "Dato": _to_date(r.get("Dato")),
+        "Dagtype": day_type_label(_to_date(r.get("Dato"))),
         "Start": str(r.get("Start") or "").strip(),
         "Slutt": str(r.get("Slutt") or "").strip(),
         "Spisetid": r.get("Spisetid (HH:MM)"),
@@ -519,25 +582,38 @@ for _, r in edited.iterrows():
 
 out_df = pd.DataFrame(rows)
 
-# Periodedata
+# Periodedata + helligdager i perioden
 valid_dates = [d for d in out_df.get("Dato", pd.Series(dtype="object")).tolist() if isinstance(d, dt.date)]
 period_str = ""
+holidays_in_period: List[Tuple[dt.date, str]] = []
 if valid_dates:
     mn, mx = min(valid_dates), max(valid_dates)
     period_str = f"{mn.strftime('%d.%m.%Y')}" if mn == mx else f"{mn.strftime('%d.%m.%Y')} – {mx.strftime('%d.%m.%Y')}"
+    for d in sorted(set(valid_dates)):
+        name = holiday_name(d)
+        if name:
+            holidays_in_period.append((d, name))
 
 # ===========================
 # SEKSJON 2: Oversikt per dag
 # ===========================
 st.markdown('<div class="kh-card">', unsafe_allow_html=True)
-period_html = f'<span class="period">📅 {period_str}</span>' if period_str else ""
-st.markdown(f'<div class="kh-section-title"><span>📊 Oversikt per dag</span>{period_html}</div>', unsafe_allow_html=True)
+chips_html = ""
+if period_str:
+    chips_html += f'<span class="kh-chip period">📅 {period_str}</span>'
+for d, name in holidays_in_period:
+    chips_html += f'<span class="kh-chip hellig">🎉 {d.strftime("%d.%m")} {name}</span>'
+st.markdown(
+    f'<div class="kh-section-title"><span>📊 Oversikt per dag</span><span class="kh-chips">{chips_html}</span></div>',
+    unsafe_allow_html=True,
+)
 
 if errors:
     st.markdown(f'<div class="err">⚠️ {errors} rad(er) mangler dato/start/slutt og er utelatt fra oppsummeringen.</div>', unsafe_allow_html=True)
 
 display_cols_map = {
     "Dato": "Dato",
+    "Dagtype": "Dagtype",
     "Start": "Start",
     "Slutt": "Slutt",
     "Totalt timer": "Totalt",
@@ -558,7 +634,7 @@ st.dataframe(display_df, use_container_width=True, hide_index=True, height=min(3
 st.markdown("</div>", unsafe_allow_html=True)
 
 # ===========================
-# SEKSJON 3: Fakturagrunnlag (HOVEDSEKSJONEN)
+# SEKSJON 3: Fakturagrunnlag
 # ===========================
 numeric_cols = [
     "Totalt timer",
@@ -584,7 +660,6 @@ t_vent = float(totals.get("Ventetid (t)", 0) or 0)
 t_fakt = float(totals.get("Fakturerbar Krantid (t)", 0) or 0)
 t_totalt = float(totals.get("Totalt timer", 0) or 0)
 
-# Kategorier: (visningsnavn, timer, sats)
 categories: List[Tuple[str, float, float]] = [
     ("Ordinær (07:30–15:00)", t_ord, sats_ord),
     ("Overtid 50% (15:00–21:00)", t_ot50, sats_ot50),
@@ -597,10 +672,16 @@ sum_kategorier = sum(h for _, h, _ in categories)
 sum_belop = sum(h * s for _, h, s in categories)
 
 st.markdown('<div class="kh-card">', unsafe_allow_html=True)
-period_html = f'<span class="period">📅 {period_str}</span>' if period_str else ""
-st.markdown(f'<div class="kh-section-title"><span>💰 Fakturagrunnlag</span>{period_html}</div>', unsafe_allow_html=True)
+chips_html = ""
+if period_str:
+    chips_html += f'<span class="kh-chip period">📅 {period_str}</span>'
+for d, name in holidays_in_period:
+    chips_html += f'<span class="kh-chip hellig">🎉 {d.strftime("%d.%m")} {name}</span>'
+st.markdown(
+    f'<div class="kh-section-title"><span>💰 Fakturagrunnlag</span><span class="kh-chips">{chips_html}</span></div>',
+    unsafe_allow_html=True,
+)
 
-# Hero: Fakturerbar krantid + evt. totalbeløp
 if any_rate:
     hero_html = f"""
 <div class="kh-invoice-hero">
@@ -657,7 +738,6 @@ for name, h, s in categories:
         f'</div>'
     )
 
-# Totalrad
 total_amount_cell = fmt_kr(sum_belop) if any_rate else '<span class="kh-muted-val">–</span>'
 rate_html += (
     f'<div class="kh-rate-row total">'
@@ -670,7 +750,7 @@ rate_html += (
 rate_html += '</div>'
 st.markdown(rate_html, unsafe_allow_html=True)
 
-# Trekk (spisetid + ventetid)
+# Trekk
 st.markdown(
     f"""
 <div class="kh-deduct-row">
@@ -695,6 +775,11 @@ with st.expander("📋 Kopi-klar oppsummering (til e-post/faktura)"):
     if period_str:
         lines.append(f"Periode:              {period_str}")
     lines.append(f"Fakturerbar krantid:  {t_fakt:>7.2f} t")
+    if holidays_in_period:
+        lines.append("")
+        lines.append("Helligdager i perioden:")
+        for d, name in holidays_in_period:
+            lines.append(f"  {d.strftime('%d.%m.%Y')} – {name}")
     lines.append("")
     lines.append("Fordeling på rater:")
     lines.append(f"  Ordinær              {t_ord:>7.2f} t")
@@ -738,7 +823,6 @@ with e1:
     )
 
 with e2:
-    # Excel med to ark: Registreringer + Oppsummering
     try:
         buf = io.BytesIO()
         with pd.ExcelWriter(buf, engine="openpyxl") as writer:
@@ -759,6 +843,12 @@ with e2:
                 ("Spisetid trukket fra (t)", round(t_spise, 2)),
                 ("Ventetid trukket fra (t)", round(t_vent, 2)),
             ]
+
+            if holidays_in_period:
+                summary_rows.append(("", ""))
+                summary_rows.append(("— Helligdager i perioden —", ""))
+                for d, name in holidays_in_period:
+                    summary_rows.append((d.strftime("%d.%m.%Y"), name))
 
             if any_rate:
                 summary_rows.append(("", ""))
